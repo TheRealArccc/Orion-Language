@@ -6,7 +6,7 @@ class ProgramNode:
     body: any
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}({self.body})")
+        return ("f({self.body})")
 
 @dataclass
 class BinaryOpNode:
@@ -15,7 +15,7 @@ class BinaryOpNode:
     op: any
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}({self.left}, {self.op.value}, {self.right})")
+        return (f"({self.left}, {self.op.value}, {self.right})")
 
 @dataclass
 class LiteralNode:
@@ -45,7 +45,7 @@ class VarDeclNode:
     value = any
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}(var {self.identifier} = {self.value})")
+        return (f"(var {self.identifier} = {self.value})")
     
 @dataclass
 class AssignNode:
@@ -53,7 +53,7 @@ class AssignNode:
     value = any
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}({self.identifier} = {self.value})")
+        return (f"({self.identifier} = {self.value})")
     
 @dataclass
 class IfNode:
@@ -62,7 +62,7 @@ class IfNode:
     else_body: any = None
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}(IF {self.condition} THEN {self.body} ELSE {self.else_body})")
+        return (f"(IF {self.condition} THEN {self.body} ELSE {self.else_body})")
 
 @dataclass
 class WhileNode:
@@ -70,7 +70,7 @@ class WhileNode:
     body: any
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}(WHILE {self.condition} DO {self.body})")
+        return (f"(WHILE {self.condition} DO {self.body})")
 
 @dataclass
 class ForNode:
@@ -80,51 +80,133 @@ class ForNode:
     body: any
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}(FOR {self.init}; {self.condition}; {self.increment} DO {self.body})")
+        return (f"(FOR {self.init}; {self.condition}; {self.increment} DO {self.body})")
 
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos = 0
-        self.current_token = self.tokens(self.pos)
+        self.current_token = self.tokens[self.pos]
         self.advance()
 
-    def raise_error_expect(self):
+    def raise_error_expect(self, expected, got):
+        raise Exception(f"Expected '{expected}', got '{got}'")
         
 
     def advance(self):
         if self.pos < len(self.tokens) and self.current_token != None:
-            pos += 1
-            self.current_token = self.tokens(self.pos)
+            self.pos += 1
+            self.current_token = self.tokens[self.pos]
         else:
             self.current_token == None
 
+    def peek(self):
+        if self.pos + 1 < len(self.tokens):
+            return self.tokens[self.pos + 1]
+        return None
+
     def parse(self):
-        result = self.
+        statements = []
+
+        while self.current_token != None:
+            stmt = self.parse_statement()
+            if stmt:
+                statements.append(stmt)
+            
+            # HANDLE SEMICOLONS/LINE ENDINGS
+
+        return ProgramNode(statements)
 
     def parse_statement(self):
+        token = self.current_token
 
-    def comparison(self):
+        if token.type == TokenType.VAR:
+            return self.parse_var_decl()
+        elif token.type == TokenType.IF:
+            return self.parse_if_statement()
+        # elif token.type == TokenType.WHILE:
+        #     return self.parse_while_statement()
+        else:
+            return self.parse_expr()
+        
+    def parse_var_decl(self):
+        if (self.peek()).type == TokenType.IDENTIFIER:
+            self.advance()
+            identifier = self.current_token.value
 
-    def expr(self):
+            if (self.peek()).type == TokenType.EQUAL:
+                self.advance()
+                return VarDeclNode(identifier, self.parse_expr())
+            
+    def parse_if_statement(self):
+        if (self.peek()).type == TokenType.LPAREN:
+            self.advance()
+            self.advance()
+            
+            condition = self.parse_expr()
+            while self.current_token.type != TokenType.RPAREN:
+                self.advance()
+                condition.append(self.parse_statement())
 
-    def term(self):
+            self.advance()
+            if self.current_token.type == TokenType.COLON:
+                self.advance()
+
+                body = []
+                while self.current_token.type not in (TokenType.END, TokenType.ELSE):
+                    body.append(self.parse_statement())
+
+                else_body = []
+                if self.current_token.type == TokenType.ELSE:
+                    self.advance()
+                    if self.current_token.type == TokenType.IF:
+                        self.parse_if_statement()
+                    
+                    while self.current_token != TokenType.END:
+                        else_body.append(self.parse_expr)
+                
+                return IfNode(condition, body, else_body)
+            else:
+                self.raise_error_expect(expected=":", got=self.current_token)
+
+    def parse_expr(self):
+        left = self.parse_term()
+
+        while self.current_token != None and self.current_token.type in (TokenType.PLUS, TokenType.MINUS):
+            op = self.current_token
+            self.advance()
+            right = self.parse_term()
+            left = BinaryOpNode(left, right, op)
+        return left
     
-    def factor(self):
+    def parse_term(self):
+        left = self.parse_factor()
 
+        while self.current_token != None and self.current_token.type in (TokenType.MUL, TokenType.DIV):
+            op = self.current_token
+            self.advance()
+            right = self.parse_factor()
+            left = BinaryOpNode(left, right, op)
+        return left
+    
+    def parse_factor(self):
+        token = self.current_token
 
-
-
-
-
-
-
-
-
-
-
-
-
+        if token.type in (TokenType.PLUS, TokenType.MINUS):
+            self.advance()
+            op = token
+            operand = self.parse_factor()
+            return UnaryOpNode(op, operand)
+        elif token.type == TokenType.LPAREN:
+            self.advance()
+            expr = self.parse_expr()
+            if self.current_token.type == TokenType.RPAREN:
+                self.advance()
+            else:
+                self.raise_error_expect(")", self.current_token)
+        elif token.type in (TokenType.INT, TokenType.FLOAT, TokenType.STRING, TokenType.BOOL, TokenType.IDENTIFIER):
+            return LiteralNode(token)
+        
 
 
 
