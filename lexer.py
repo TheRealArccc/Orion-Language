@@ -3,9 +3,10 @@ from enum import Enum
 
 WHITESPACE = ' \n\t'
 DIGITS = '0123456789.'
-KEYWORDS = ["var", "if", "else", "while", "for"]
+KEYWORDS = ["var", "if", "else", "while", "for", "end", "return"]
 LETTERS_LOWER = 'abcdefghijklmnopqrstuvwxyz'
 IDENTIFIERS_CHARS = '01234567890abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+RESERVED_SYMBOLS = '"''=\\;,.<>=^():+-*/'
 
 class TokenType(Enum):
     INT = 0
@@ -39,7 +40,7 @@ class TokenType(Enum):
     COLON = 25
 
     EQEQ = 26 # ==
-    NOTEQ = 27 # !=
+    NOT = 27 # !
     GT = 28 # >
     LT = 29 # <
     GTEQ = 30 # >=
@@ -47,6 +48,11 @@ class TokenType(Enum):
     
     AND = 32
     OR = 33 #
+    END = 34
+    RETURN = 35
+
+    PLUSPLUS = 36
+    MINUSMINUS = 37
 
 @dataclass
 class Token:
@@ -78,7 +84,10 @@ class Lexer:
             return
         elif self.current_char == '/':
             self.advance()
-            return
+            if self.current_char == '/':
+                return
+            else:
+                self.skip_comments()
         else:
             self.skip_comments()
             # self.raise_error("Comments left open")
@@ -95,31 +104,27 @@ class Lexer:
             if self.current_char in WHITESPACE:
                 self.skip_whitespace()
             
-             # SKIP COMMENTS
-            elif self.current_char == "/": # START SYMBOLS
-                self.advance()
-                if self.current_char == "/":
-                    self.skip_comments()
-                elif self.current_char == None:
-                    self.raise_error(f"{self.current_char} is not recognised. Did you mean '``'")
-            
             #BINOPS
             elif self.current_char.isdigit() or self.current_char ==  '.': # INTS/FLOATS AND DECIMALS POINTS
                 yield self.generate_number()
             # elif self.current_char == '"':
             #     yield Token(TokenType.STRING, self.generate_number(self.current_char))
             elif self.current_char == '+':
-                yield Token(TokenType.PLUS, self.current_char)
-                self.advance()
+                yield self.determine_plus()
             elif self.current_char == '-':
-                yield Token(TokenType.MINUS, self.current_char)
-                self.advance()
+                yield self.determine_minus()
             elif self.current_char == '*':
                 yield Token(TokenType.MUL, self.current_char)
                 self.advance()
-            elif self.current_char == '/':
-                yield Token(TokenType.DIV, self.current_char)
+            elif self.current_char == '/': # HANDLES COMMENTS
                 self.advance()
+                if self.current_char == "/":
+                    self.skip_comments()
+                elif self.current_char == None:
+                    self.raise_error(f"{self.current_char} is not recognised. Did you mean '//'")
+                else:
+                    yield Token(TokenType.DIV, self.current_char)
+
             elif self.current_char == '(':
                 yield Token(TokenType.LPAREN, self.current_char)
                 self.advance()
@@ -140,6 +145,9 @@ class Lexer:
             elif self.current_char == ';':
                 yield Token(TokenType.SEMICOLON, self.current_char)
                 self.advance()
+            elif self.current_char == ':':
+                yield Token(TokenType.COLON, self.current_char)
+                self.advance()
 
             # EQUALS AND CONDITIONAL OP
             elif self.current_char == '=':
@@ -157,6 +165,9 @@ class Lexer:
             elif self.current_char == '|':
                 yield self.determine_or()
                 self.advance()
+            elif self.current_char == '!':
+                yield Token(TokenType.NOT, self.current_char)
+                self.advance()
 
             # STRINGS
             elif self.current_char == '"' or self.current_char == "'":
@@ -171,6 +182,27 @@ class Lexer:
                 yield self.generate_keyword() # CHECK FOR KEYWORDS(E.G. VAR)
             else:
                 self.raise_error(r"Invalid syntax")
+
+    def determine_minus(self):
+        current_symbol = self.current_char
+        self.advance()
+        
+        if self.current_char == '-':
+            current_symbol += self.current_char
+            return Token(TokenType.MINUSMINUS, current_symbol)
+        else:
+            return Token(TokenType.MINUS, current_symbol)
+
+    def determine_plus(self):
+        current_symbol = self.current_char
+        self.advance()
+        
+        if self.current_char == '+':
+            current_symbol += self.current_char
+            self.advance()
+            return Token(TokenType.PLUSPLUS, current_symbol)
+        else:
+            return Token(TokenType.PLUS, current_symbol)
 
     def determine_and(self):
         current_symbol = self.current_char
@@ -227,19 +259,21 @@ class Lexer:
     def generate_number(self):
         current_num = self.current_char
         dp_count = 0
+        if self.current_char == '.':
+            dp_count += 1
+            
         self.advance()
 
-        while str(self.current_char) in DIGITS and self.current_char != None and dp_count <= 1:
+        while str(self.current_char) in DIGITS and self.current_char != None:
             if str(self.current_char) in DIGITS:
                 if self.current_char == '.':
-                    if dp_count == 1:
-                        break
                     dp_count += 1
 
                 current_num = f"{current_num}{self.current_char}"
                 self.advance()
 
         if dp_count <= 1:
+            print(dp_count)
             if dp_count > 0:
                 if current_num.endswith('.') :
                     current_num = f"{current_num}{0}"
@@ -253,8 +287,11 @@ class Lexer:
         elif dp_count > 1:
             self.raise_error(r"Too many decimal points")
 
-    def generate_bool(self, value=bool):
-        return Token(TokenType.BOOL, value)
+    def generate_bool(self, value):
+        if value == 'True':
+            return Token(TokenType.BOOL, True)
+        else:
+            return Token(TokenType.BOOL, False)
         
     def generate_string(self, quote_type): # INCLUDES QUOTATIONS
         if quote_type == "'" or quote_type == '"':
@@ -302,11 +339,11 @@ class Lexer:
         return Token(TokenType.IDENTIFIER, identifier)
 
     def decipher_term(self):
-        if isinstance(self.current_char, str) and self.current_char != None and self.current_char not in ("'", '"', "=", ";", "\\", ",", ".") and self.current_char not in WHITESPACE:
+        if isinstance(self.current_char, str) and self.current_char != None and self.current_char not in RESERVED_SYMBOLS and self.current_char not in WHITESPACE:
             current_word = self.current_char
             self.advance()
 
-        while isinstance(self.current_char, str) and self.current_char != None and self.current_char not in ("'", '"', "=", ";", "\\", ",", ".") and self.current_char not in WHITESPACE:
+        while isinstance(self.current_char, str) and self.current_char != None and self.current_char not in RESERVED_SYMBOLS and self.current_char not in WHITESPACE:
             current_word += self.current_char
             self.advance()
 
@@ -324,6 +361,10 @@ class Lexer:
                 return self.generate_keyword(TokenType.WHILE, current_word)
             elif current_word == 'for':
                 return self.generate_keyword(TokenType.FOR, current_word)
+            elif current_word == 'return':
+                return self.generate_keyword(TokenType.RETURN, current_word)
+            elif current_word == 'end':
+                return self.generate_keyword(TokenType.END, current_word)
         elif current_word in ("True", "False"):
             return self.generate_bool(current_word)
         else:
