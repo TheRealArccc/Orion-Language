@@ -45,14 +45,15 @@ class TokenType(Enum):
     LT = 29 # <
     GTEQ = 30 # >=
     LTEQ = 31 # <=
+    NOTEQ = 32
     
-    AND = 32
-    OR = 33 #
-    END = 34
-    RETURN = 35
+    AND = 33
+    OR = 34 #
+    END = 35
+    RETURN = 36
 
-    PLUSPLUS = 36
-    MINUSMINUS = 37
+    PLUSPLUS = 37
+    MINUSMINUS = 38
 
 @dataclass
 class Token:
@@ -123,7 +124,7 @@ class Lexer:
                 elif self.current_char == None:
                     self.raise_error(f"{self.current_char} is not recognised. Did you mean '//'")
                 else:
-                    yield Token(TokenType.DIV, self.current_char)
+                    yield Token(TokenType.DIV, "/")
 
             elif self.current_char == '(':
                 yield Token(TokenType.LPAREN, self.current_char)
@@ -166,8 +167,12 @@ class Lexer:
                 yield self.determine_or()
                 self.advance()
             elif self.current_char == '!':
-                yield Token(TokenType.NOT, self.current_char)
                 self.advance()
+                if self.current_char == '=':
+                    yield Token(TokenType.NOTEQ, '!=')
+                    self.advance()
+                else:
+                    yield Token(TokenType.NOT, '!')
 
             # STRINGS
             elif self.current_char == '"' or self.current_char == "'":
@@ -273,7 +278,6 @@ class Lexer:
                 self.advance()
 
         if dp_count <= 1:
-            print(dp_count)
             if dp_count > 0:
                 if current_num.endswith('.') :
                     current_num = f"{current_num}{0}"
@@ -346,8 +350,6 @@ class Lexer:
         while isinstance(self.current_char, str) and self.current_char != None and self.current_char not in RESERVED_SYMBOLS and self.current_char not in WHITESPACE:
             current_word += self.current_char
             self.advance()
-
-        print(current_word)
         
         # KEYWORDS > BOOLEAN > IDENTIFIER
         if current_word in KEYWORDS:
