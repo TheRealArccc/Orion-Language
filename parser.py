@@ -1,3 +1,6 @@
+# FIXED IF NESTING
+# FIXED parse_if_statement()
+
 from dataclasses import dataclass
 from lexer import TokenType
 
@@ -54,7 +57,7 @@ class AssignNode:
     value: any
 
     def __repr__(self):
-        return (f"({self.identifier} = {self.value})")
+        return (f"({self.identifier.value} = {self.value})")
     
 @dataclass
 class IfNode:
@@ -94,6 +97,12 @@ class Parser:
             raise Exception(f"Excpected '{expected}'")
         else:
             raise Exception(f"Expected '{expected}', got '{got}'")
+        
+    def raise_error(self, message):
+        if message:
+            raise Exception(str(message))
+        else:
+            return
 
     def advance(self):
         self.pos += 1
@@ -106,6 +115,10 @@ class Parser:
         if self.pos + 1 < len(self.tokens):
             return self.tokens[self.pos + 1]
         return None
+    
+    def peek_prev_token(self):
+        if self.pos < len(self.tokens):
+            return self.tokens[self.pos + 1]
 
     def parse(self):
         statements = []
@@ -125,6 +138,10 @@ class Parser:
     def parse_statement(self, current_statement=None):
         token = self.current_token
 
+        if token.type == TokenType.IDENTIFIER:
+            if current_statement == None:
+                return self.parse_assignment()
+            return (f"{current_statement}{self.parse_assignment()}")
         if token.type == TokenType.VAR:
             if current_statement == None:
                 return self.parse_var_decl()
@@ -153,6 +170,13 @@ class Parser:
         right = self.parse_condition()
         self.advance()
         return BinaryOpNode(left, op, right)
+    
+    def parse_assignment(self):
+        identifier = self.current_token
+        self.advance()
+        if self.current_token.type ==TokenType.EQUAL:
+            self.advance()
+            return AssignNode(identifier, self.parse_expr())
 
     def parse_var_decl(self):
         self.advance()
@@ -187,9 +211,9 @@ class Parser:
             if self.current_token.type == TokenType.COLON:
                 self.advance()
                 body = self.parse_statement()
-                self.advance()
-                print(self.current_token)
-                while self.current_token.type not in (TokenType.END, TokenType.ELSE, None):
+                if self.peek() != None:
+                    self.advance()
+                while self.current_token.type not in (TokenType.END, TokenType.ELSE):
                     body = self.parse_statement(body)
                     # SEMICOLON
                     if self.current_token and self.current_token.type == TokenType.SEMICOLON:
@@ -198,12 +222,23 @@ class Parser:
                         self.raise_error_expect(";")
                         
                 if self.current_token.type == TokenType.ELSE:
+                    else_body = None
                     self.advance()
                     if self.current_token.type == TokenType.IF:
-                        self.parse_if_statement()
+                        print("ELSE IF")
+                        else_body = self.parse_if_statement()
+                        print(else_body)
                     else:
-                        while self.current_token.type != TokenType.END:
-                            else_body = self.parse_expr()
+                        if self.current_token.type == TokenType.COLON:
+                            self.advance()
+                            while self.current_token.type != TokenType.END:
+                                else_body = self.parse_statement()
+                                self.advance()
+                        else:
+                            self.raise_error_expect(":")
+
+                    if else_body == None:
+                        self.raise_error("Unexpected error")
                     
                     return IfNode(condition, body, else_body)
                 elif self.current_token.type == TokenType.END:
