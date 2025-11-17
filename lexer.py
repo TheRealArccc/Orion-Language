@@ -77,15 +77,16 @@ class Lexer:
 
     def skip_comments(self):
         self.advance()
-        while self.current_char not in ('/', '\n'):
+        while self.current_char not in ('/', '\n', None):
             self.advance()
 
-        if self.current_char == '\n':
+        if self.current_char in ('\n', None):
             self.advance()
             return
         elif self.current_char == '/':
             self.advance()
             if self.current_char == '/':
+                self.advance()
                 return
             else:
                 self.skip_comments()
@@ -119,6 +120,7 @@ class Lexer:
                 self.advance()
             elif self.current_char == '/': # HANDLES COMMENTS
                 self.advance()
+                print(self.current_char)
                 if self.current_char == "/":
                     self.skip_comments()
                 elif self.current_char == None:
@@ -152,8 +154,7 @@ class Lexer:
 
             # EQUALS AND CONDITIONAL OP
             elif self.current_char == '=':
-                yield self.determine_equals()
-                self.advance()
+                yield self.determine_equals() # NO SELF.ADVANCE()
             elif self.current_char == '<':
                 yield self.determine_less_than()
                 self.advance()
@@ -255,6 +256,7 @@ class Lexer:
 
         if self.current_char == '=':
             current_eq += self.current_char
+            self.advance()
             return Token(TokenType.EQEQ, current_eq)
         else:
             return Token(TokenType.EQUAL, current_eq)
