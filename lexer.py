@@ -157,10 +157,8 @@ class Lexer:
                 yield self.determine_equals() # NO SELF.ADVANCE()
             elif self.current_char == '<':
                 yield self.determine_less_than()
-                self.advance()
             elif self.current_char == '>':
                 yield self.determine_greater_than()
-                self.advance()
             elif self.current_char == '&':
                 yield self.determine_and()
                 self.advance()
