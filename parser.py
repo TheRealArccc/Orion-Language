@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from lexer import TokenType
+from lexer import TokenType, Token
 
 @dataclass
 class ProgramNode:
@@ -32,6 +32,14 @@ class UnaryOpNode:
 
     def __repr__(self):
         return (f"{self.op.value}{self.operand}")
+
+@dataclass
+class PostfixOpNode:
+    identifier: str
+    op: any
+
+    def __repr__(self):
+        return (f"({self.identifier.value}{self.op.value})")
     
 @dataclass
 class VariableNode:
@@ -87,7 +95,8 @@ class Parser:
     def __init__(self, tokens):
         self.tokens = tokens or []
         self.pos = 0
-        self.current_token = self.tokens[self.pos]
+        if tokens:
+            self.current_token = self.tokens[self.pos]
 
     def raise_error_expect(self, expected, got=None):
         if got == None:
@@ -104,7 +113,7 @@ class Parser:
 
     def advance(self):
         self.pos += 1
-        if self.current_token and self.pos < len(self.tokens) and self.tokens[self.pos] != None:
+        if self.current_token and self.pos < len(self.tokens):
             self.current_token = self.tokens[self.pos]
         else:
             self.current_token = None
@@ -115,35 +124,37 @@ class Parser:
         return None
     
     def peek_prev_token(self):
-        if self.pos < len(self.tokens):
-            return self.tokens[self.pos + 1]
+        if self.pos - 1 > 0:
+            return self.tokens[self.pos - 1]
 
     def parse(self):
         statements = []
         
-        while self.current_token != None:
-            stmt = self.parse_statement()
-            if stmt:
-                statements.append(stmt)
-            
-            # HANDLE SEMICOLONS/LINE ENDINGS
-            if self.current_token and self.current_token.type == TokenType.SEMICOLON:
-                self.advance()
+        if self.tokens:
+            while self.current_token != None:
+                stmt = self.parse_statement()
+                if stmt:
+                    statements.append(stmt)
+                
+                # HANDLE SEMICOLONS/LINE ENDINGS
+                if self.current_token and self.current_token.type == TokenType.SEMICOLON:
+                    self.advance()
 
         return ProgramNode(statements)
 
     def parse_statement(self):
         token = self.current_token
 
-        if token.type == TokenType.IDENTIFIER and self.peek().type == TokenType.EQUAL:
+        if token.type == TokenType.IDENTIFIER and self.peek() and self.peek().type == TokenType.EQUAL:
             return self.parse_assignment()
         if token.type == TokenType.VAR:
             return self.parse_var_decl()
         elif token.type == TokenType.IF:
             return self.parse_if_statement()
         elif token.type == TokenType.WHILE:
-            print("while")
             return self.parse_while_statement()
+        elif token.type == TokenType.FOR:
+            return self.parse_for_statement()
         else:
             return self.parse_expr()
     
@@ -167,7 +178,7 @@ class Parser:
             else:
                 self.raise_error_expect("=", self.current_token.value)
         else:
-            self.raise_error_expect("IDENTIFIER", self.current_token.type.name)
+            self.raise_error_expect("identifier", self.current_token.type.name)
             
     ############### CONDITIONALS AND LOOPS #################
     def parse_if_statement(self):
@@ -194,6 +205,8 @@ class Parser:
                     # SEMICOLON
                     if self.current_token and self.current_token.type == TokenType.SEMICOLON:
                         self.advance()
+                    elif self.peek_prev_token() and self.peek_prev_token().type == TokenType.END:
+                        continue
                     else:
                         self.raise_error_expect(";")
                 print(self.current_token)
@@ -266,6 +279,89 @@ class Parser:
                 self.raise_error_expect("end")
         else:
             self.raise_error_expect("(")
+
+    def parse_for_statement(self):
+        self.advance()
+        if self.current_token and self.current_token.type == TokenType.LPAREN:
+            self.advance()
+            if self.current_token and self.current_token.type == TokenType.VAR:
+                init = self.parse_var_decl()
+                print(self.current_token)
+                if self.current_token and self.current_token.type == TokenType.SEMICOLON:
+                    print("OKOKO")
+                    self.advance()
+                    condition = self.parse_logical_or()
+                    if self.current_token and self.current_token.type == TokenType.SEMICOLON:
+                        self.advance()
+                        print(self.current_token)
+                        # POST DECREMENT/INCREMENT
+                        if self.current_token and self.current_token.type == TokenType.IDENTIFIER: 
+                            postfixop_identifier = self.current_token
+                            self.advance()
+                            if self.current_token.type in (TokenType.MINUSMINUS, TokenType.PLUSPLUS):
+                                postfixop_op = self.current_token
+                                self.advance()
+
+                                # RPAREN
+                                if self.current_token and self.current_token.type == TokenType.RPAREN:
+                                    self.advance()
+                                    unopchange = PostfixOpNode(postfixop_identifier, postfixop_op)
+                                else:
+                                    self.raise_error_expect(")")
+                            else:
+                                self.raise_error_expect("++, --")
+                        # PRE-DECREMENT/INCREMENT
+                        elif self.current_token and self.current_token.type in (TokenType.MINUSMINUS, TokenType.PLUSPLUS): #Prefix Op
+                            op = self.current_token
+                            self.advance()
+                            if self.current_token and self.current_token.type == TokenType.IDENTIFIER:
+                                identifier = self.current_token
+                                self.advance()
+                                # RPAREN
+                                if self.current_token and self.current_token.type == TokenType.RPAREN:
+                                    self.advance()
+                                    unopchange = AssignNode(identifier, BinaryOpNode(VariableNode(f"{identifier.value}"), Token(TokenType.PLUS, "+"), LiteralNode(Token(TokenType.INT, 1))))
+                                else:
+                                    self.raise_error_expect(")")
+                            else:
+                                self.raise_error(f"Expected identifier after '{op.value}'")
+                        else:
+                            self.raise_error("Expected increment or decrement")
+                    else:
+                        self.raise_error_expect(";")
+                else:
+                    self.raise_error_expect(";")
+            else:
+                self.raise_error_expect("var")
+        else:
+            self.raise_error_expect(")")
+        
+        # BODY
+        if self.current_token.type == TokenType.COLON:
+            self.advance()
+            body = []
+            while self.current_token != None and self.current_token.type not in (TokenType.END, None):
+                stmt = self.parse_statement()
+                if stmt:
+                    body.append(stmt)
+                if self.current_token.type == TokenType.SEMICOLON:
+                    self.advance()
+                elif self.peek_prev_token() and self.peek_prev_token().type == TokenType.END and self.current_token.type != TokenType.SEMICOLON:
+                    continue                    
+                else:
+                    self.raise_error_expect(";")
+                print(stmt)
+            if body == []:
+                self.raise_error("Body cannot be empty")
+            if self.current_token and self.current_token.type == TokenType.END:
+                self.advance()
+            else:
+                self.raise_error_expect("end")
+        else:
+            self.raise_error_expect(":")
+
+        print(f"SSS{init}{condition}{unopchange}{body}")
+        return ForNode(init, condition, unopchange, body)
     
     def parse_logical_or(self):
         left = self.parse_logical_and()
@@ -294,6 +390,9 @@ class Parser:
             self.advance()
             right = self.parse_expr()
             left = BinaryOpNode(left, op, right)
+        if self.current_token.type == TokenType.EQUAL:
+            print(self.current_token)
+            self.raise_error("Unexpected operator")
         return left
 
     def parse_expr(self):
