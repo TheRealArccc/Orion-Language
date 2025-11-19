@@ -3,7 +3,7 @@ from enum import Enum
 
 WHITESPACE = ' \n\t'
 DIGITS = '0123456789.'
-KEYWORDS = ["var", "if", "else", "while", "for", "end", "return"]
+KEYWORDS = ["var", "if", "else", "while", "for", "end", "return", "fn"]
 LETTERS_LOWER = 'abcdefghijklmnopqrstuvwxyz'
 IDENTIFIERS_CHARS = '01234567890abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 RESERVED_SYMBOLS = '"''=\\;,.<>=^():+-*/'
@@ -54,6 +54,8 @@ class TokenType(Enum):
 
     PLUSPLUS = 37
     MINUSMINUS = 38
+
+    FUNC = 39
 
 @dataclass
 class Token:
@@ -234,6 +236,7 @@ class Lexer:
 
         if self.current_char == '=':
             current_less_than += self.current_char
+            self.advance()
             return Token(TokenType.LTEQ, current_less_than)
         else:
             return Token(TokenType.LT, current_less_than)
@@ -244,6 +247,7 @@ class Lexer:
 
         if self.current_char == '=':
             current_more_than += self.current_char
+            self.advance()
             return Token(TokenType.GTEQ, current_more_than)
         else:
             return Token(TokenType.GT, current_more_than)
@@ -367,6 +371,8 @@ class Lexer:
                 return self.generate_keyword(TokenType.RETURN, current_word)
             elif current_word == 'end':
                 return self.generate_keyword(TokenType.END, current_word)
+            elif current_word == 'fn':
+                return self.generate_keyword(TokenType.FUNC, current_word)
         elif current_word in ("True", "False"):
             return self.generate_bool(current_word)
         else:
