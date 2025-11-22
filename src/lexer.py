@@ -3,10 +3,10 @@ from enum import Enum
 
 WHITESPACE = ' \n\t'
 DIGITS = '0123456789.'
-KEYWORDS = ["var", "if", "else", "while", "for", "end", "return", "fn"]
+KEYWORDS = ["var", "if", "else", "while", "for", "end", "return", "fn", "Nothing"]
 LETTERS_LOWER = 'abcdefghijklmnopqrstuvwxyz'
 IDENTIFIERS_CHARS = '01234567890abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-RESERVED_SYMBOLS = '"''=\\;,.<>=^():+-*/'
+RESERVED_SYMBOLS = '"''=\\;,.<>=^():+-*/!^%'
 
 class TokenType(Enum):
     INT = 0
@@ -56,6 +56,7 @@ class TokenType(Enum):
     MINUSMINUS = 38
 
     FUNC = 39
+    NOTHING = 40
 
 @dataclass
 class Token:
@@ -74,7 +75,7 @@ class Lexer:
         raise Exception(f"{message}")
 
     def skip_whitespace(self):
-        while self.current_char in WHITESPACE:
+        while self.current_char and self.current_char in WHITESPACE:
             self.advance()
 
     def skip_comments(self):
@@ -373,6 +374,8 @@ class Lexer:
                 return self.generate_keyword(TokenType.END, current_word)
             elif current_word == 'fn':
                 return self.generate_keyword(TokenType.FUNC, current_word)
+            elif current_word == 'Nothing':
+                return self.generate_keyword(TokenType.NOTHING, current_word)
         elif current_word in ("True", "False"):
             return self.generate_bool(current_word)
         else:
