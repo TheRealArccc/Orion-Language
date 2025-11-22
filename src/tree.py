@@ -1,0 +1,136 @@
+from dataclasses import dataclass
+
+@dataclass
+class ProgramNode:
+    body: list
+
+    def __repr__(self):
+        return (f"PROGRAM({self.body})")
+
+@dataclass
+class BinaryOpNode:
+    left: any
+    op: any
+    right: any
+    
+
+    def __repr__(self):
+        return (f"({self.left} {self.op.value} {self.right})")
+
+@dataclass
+class NothingLiteralNode:
+    literal: None
+
+    def __repr__(self):
+        return (f"Nothing") if self.literal == None else ("(ERROR_VALUE)")
+
+@dataclass
+class LiteralNode:
+    literal: any
+
+    def __repr__(self):
+        return str(self.literal.value)
+    
+@dataclass
+class UnaryOpNode:
+    op: any
+    operand: any
+
+    def __repr__(self):
+        return (f"{self.op.value}{self.operand}")
+
+@dataclass
+class PostfixOpNode:
+    identifier: str
+    op: any
+
+    def __repr__(self):
+        return (f"({self.identifier}{self.op.value})")
+    
+@dataclass
+class VariableNode:
+    identifier: str
+
+    def __repr__(self):
+        return self.identifier
+    
+@dataclass
+class VarDeclNode:
+    identifier: any
+    value: any = None
+
+    def __repr__(self):
+        return (f"(var {self.identifier} = {self.value})")
+    
+@dataclass
+class AssignNode:
+    identifier: any
+    value: any
+
+    def __repr__(self):
+        return (f"({self.identifier} = {self.value})")
+    
+@dataclass
+class IfNode:
+    condition: any
+    body: any
+    else_body: any = None
+
+    def __repr__(self):
+        return (f"(IF {self.condition} THEN \n\t{self.body} \n\tELSE {self.else_body})")
+
+@dataclass
+class WhileNode:
+    condition: any
+    body: any
+
+    def __repr__(self):
+        return (f"(WHILE {self.condition} DO {self.body})")
+
+@dataclass
+class ForNode:
+    init: any
+    condition: any
+    increment: any
+    body: any
+
+    def __repr__(self):
+        return (f"(FOR {self.init}; {self.condition}; {self.increment} DO {self.body})")
+    
+@dataclass
+class ParameterNode:
+    parameter: any
+
+    def __repr__(self):
+        return f"({self.parameter})"
+    
+@dataclass
+class ArgumentNode:
+    args: any
+
+    def __repr__(self):
+        return f"({self.args})"
+        
+@dataclass
+class FunctionDefNode:
+    name: str
+    params: ParameterNode
+    body: any
+
+    def __repr__(self):
+        return (f"(FUNCTION {self.name}({self.params}) DO {self.body})")
+    
+@dataclass
+class FunctionCallNode:
+    name: str
+    args: ArgumentNode
+
+    def __repr__(self):
+        return (f"(CALL {self.name.value}({self.args}))")
+    
+@dataclass
+class ReturnNode:
+    value: any
+
+    def __repr__(self):
+        return (f"RETURN {self.value}")
