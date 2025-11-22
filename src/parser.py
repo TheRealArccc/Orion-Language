@@ -1,133 +1,5 @@
-from dataclasses import dataclass
 from lexer import TokenType, Token
-
-@dataclass
-class ProgramNode:
-    body: any
-
-    def __repr__(self):
-        return (f"PROGRAM({self.body})")
-
-@dataclass
-class BinaryOpNode:
-    left: any
-    op: any
-    right: any
-    
-
-    def __repr__(self):
-        return (f"({self.left} {self.op.value} {self.right})")
-
-@dataclass
-class LiteralNode:
-    literal: any
-
-    def __repr__(self):
-        return str(self.literal.value)
-    
-@dataclass
-class UnaryOpNode:
-    op: any
-    operand: any
-
-    def __repr__(self):
-        return (f"{self.op.value}{self.operand}")
-
-@dataclass
-class PostfixOpNode:
-    identifier: str
-    op: any
-
-    def __repr__(self):
-        return (f"({self.identifier}{self.op.value})")
-    
-@dataclass
-class VariableNode:
-    identifier: str
-
-    def __repr__(self):
-        return self.identifier
-    
-@dataclass
-class VarDeclNode:
-    identifier: any
-    value: any = None
-
-    def __repr__(self):
-        return (f"(var {self.identifier} = {self.value})")
-    
-@dataclass
-class AssignNode:
-    identifier: any
-    value: any
-
-    def __repr__(self):
-        return (f"({self.identifier} = {self.value})")
-    
-@dataclass
-class IfNode:
-    condition: any
-    body: any
-    else_body: any = None
-
-    def __repr__(self):
-        return (f"(IF {self.condition} THEN \n\t{self.body} \n\tELSE {self.else_body})")
-
-@dataclass
-class WhileNode:
-    condition: any
-    body: any
-
-    def __repr__(self):
-        return (f"(WHILE {self.condition} DO {self.body})")
-
-@dataclass
-class ForNode:
-    init: any
-    condition: any
-    increment: any
-    body: any
-
-    def __repr__(self):
-        return (f"(FOR {self.init}; {self.condition}; {self.increment} DO {self.body})")
-    
-@dataclass
-class ParameterNode:
-    parameter: any
-
-    def __repr__(self):
-        return f"({self.parameter})"
-    
-@dataclass
-class ArgumentNode:
-    args: any
-
-    def __repr__(self):
-        return f"({self.args})"
-        
-@dataclass
-class FunctionDefNode:
-    name: str
-    params: ParameterNode
-    body: any
-
-    def __repr__(self):
-        return (f"(FUNCTION {self.name}({self.params}) DO {self.body})")
-    
-@dataclass
-class FunctionCallNode:
-    name: str
-    args: ArgumentNode
-
-    def __repr__(self):
-        return (f"(CALL {self.name.value}({self.args}))")
-    
-@dataclass
-class ReturnNode:
-    value: any
-
-    def __repr__(self):
-        return (f"RETURN {self.value}")
+from tree import *
 
 class Parser:
     def __init__(self, tokens):
@@ -141,7 +13,7 @@ class Parser:
             raise Exception(f"Expected '{expected}'")
         else:
             print(self.current_token)
-            raise Exception(f"Expected '{expected}', got '{got}'")
+            raise Exception(f"Expected '{expected}', got '{got.value}'")
         
     def raise_error(self, message):
         if message:
@@ -178,6 +50,10 @@ class Parser:
                 # HANDLE SEMICOLONS/LINE ENDINGS
                 if self.current_token and self.current_token.type == TokenType.SEMICOLON:
                     self.advance()
+                elif self.peek_prev_token() and self.peek_prev_token().type == TokenType.END:
+                    continue
+                else:
+                    self.raise_error_expect(';', self.current_token)
 
         return ProgramNode(statements)
 
@@ -238,7 +114,11 @@ class Parser:
     def parse_return_statement(self):
         self.advance()
         if self.current_token and self.current_token.type == TokenType.SEMICOLON:
+            self.advance()
             return ReturnNode(None)
+        elif self.current_token and self.current_token.type == TokenType.NOTHING:
+            self.advance()
+            return ReturnNode(NothingLiteralNode(None))
         value = self.parse_expr()
         return ReturnNode(value)
 
@@ -373,6 +253,8 @@ class Parser:
                         self.advance()
                     elif self.current_token and self.current_token.type == TokenType.END:
                         break
+                    elif self.peek_prev_token() and self.peek_prev_token().type == TokenType.END:
+                        continue
                     else:
                         self.raise_error_expect(";")
                 print(self.current_token)
@@ -407,7 +289,8 @@ class Parser:
                         self.raise_error("Expected content inside of else")
                     
                     return IfNode(condition, body, else_body)
-                elif self.current_token.type == TokenType.END:
+                elif self.current_token and self.current_token.type == TokenType.END:
+                    print("N"*20)
                     self.advance()
                     if self.current_token and self.current_token.type == TokenType.SEMICOLON:
                         self.advance()
@@ -520,7 +403,7 @@ class Parser:
                 if self.current_token.type == TokenType.SEMICOLON:
                     self.advance()
                 elif self.peek_prev_token() and self.peek_prev_token().type == TokenType.END and self.current_token.type != TokenType.SEMICOLON:
-                    continue                    
+                    continue                   
                 else:
                     self.raise_error_expect(";")
                 print(stmt)
@@ -609,3 +492,6 @@ class Parser:
         elif token.type == TokenType.IDENTIFIER:
             self.advance()
             return VariableNode(token.value)
+        elif token.type == TokenType.NOTHING:
+            self.advance()
+            return NothingLiteralNode(None)
