@@ -1,6 +1,7 @@
 import time
 from lexer import Lexer
 from parser import Parser
+from runtime.interpreter import Interpreter
 
 start_time = time.perf_counter()
 
@@ -17,6 +18,10 @@ def main():
         parser = Parser(tokens)
         tree = parser.parse()
         print(tree)
+
+        interpreter = Interpreter()
+        result = interpreter.interpret(tree)
+        print(result)
     except FileNotFoundError:
         raise 'file does not exist'
 

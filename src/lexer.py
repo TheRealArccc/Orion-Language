@@ -196,6 +196,7 @@ class Lexer:
         
         if self.current_char == '-':
             current_symbol += self.current_char
+            self.advance()
             return Token(TokenType.MINUSMINUS, current_symbol)
         else:
             return Token(TokenType.MINUS, current_symbol)
