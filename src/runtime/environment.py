@@ -1,5 +1,6 @@
 class Environment:
-    def __init__(self):
+    def __init__(self, parent=None):
+        self.parent = parent
         self.scopes = [{}]
 
     def enter_scope(self):
@@ -9,22 +10,37 @@ class Environment:
         if len(self.scopes) > 1:
             self.scopes.pop()
 
-    def declare_var(self, identifier, value):
+    def declare(self, identifier, value):
         current_scope = self.scopes[-1]
         if identifier in current_scope:
             raise Exception(f"'{identifier}' already exists")
         current_scope[identifier] = value
 
-    def assign_var(self, identifier, value):
+    def assign(self, identifier, value):
         for scope in reversed(self.scopes):
             if identifier in scope:
                 scope[identifier] = value
                 return
+            
+        if self.parent:
+            self.parent.assign(identifier, value)
+            return
+
         raise Exception(f"'{identifier}' is not declared")
     
-    def get_var(self, identifier):
+    def get(self, identifier):
+        self.debug()
         for scope in reversed(self.scopes):
             if identifier in scope:
                 value = scope.get(identifier)
                 return value
+            
+        if self.parent:
+            return self.parent.get(identifier)
         raise Exception(f"'{identifier}' does not exist")
+    
+    def debug(self):
+        print("SCOPE: ", self.scopes)
+        if self.parent:
+            print("Parent →")
+            self.parent.debug()
