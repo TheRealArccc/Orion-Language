@@ -39,3 +39,13 @@ class NothingValue:
     def __repr__(self):
         return (f"{self.value}")
     
+@dataclass
+class FunctionValue:
+    name: str
+    params: any
+    body: any
+    env: any
+
+class ReturnSignal(Exception):
+    def __init__(self, value):
+        self.value = value
