@@ -336,7 +336,7 @@ class Lexer:
                 current_string = f"{current_string}{self.current_char}" # ADD LAST QUOTATION MARK
                 self.advance()
 
-                return Token(TokenType.STRING, str(current_string))
+                return Token(TokenType.STRING, str(current_string[1:-1]))
             else:
                 self.raise_error(f"Expected ({quote_type}), got ({self.current_char})")
         else:
