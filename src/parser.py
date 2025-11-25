@@ -104,19 +104,18 @@ class Parser:
 
             if self.current_token.type == TokenType.EQUAL:
                 self.advance()
-                
-                return VarDeclNode(identifier, self.parse_expr())
+                value = self.parse_expr()
+                if value:
+                    return VarDeclNode(identifier, value)
+                self.raise_error(f"'{identifier}' must have a declared value")
             else:
-                self.raise_error_expect("=", self.current_token.value)
+                self.raise_error_expect("=", self.current_token)
         else:
-            self.raise_error_expect("identifier", self.current_token.type.name)
+            self.raise_error_expect("identifier", self.current_token)
 
     def parse_return_statement(self):
         self.advance()
-        if self.current_token and self.current_token.type == TokenType.SEMICOLON:
-            self.advance()
-            return ReturnNode(None)
-        elif self.current_token and self.current_token.type == TokenType.NOTHING:
+        if self.current_token and self.current_token.type in (TokenType.SEMICOLON, TokenType.NOTHING):
             self.advance()
             return ReturnNode(NothingLiteralNode(None))
         value = self.parse_expr()
@@ -133,28 +132,25 @@ class Parser:
                 self.raise_error(f"Unexpected argument error for method '{name.value}()'")
             if self.current_token and self.current_token.type == TokenType.RPAREN:
                 self.advance()
-                if self.current_token and self.current_token.type == TokenType.SEMICOLON:
-                    return FunctionCallNode(name, ArgumentNode(args))
-                else:
-                    self.raise_error_expect(";")
+                return FunctionCallNode(name, args)
             else:
-                self.raise_error_expect(")")
+                self.raise_error_expect(")", self.current_token)
         else:
-            self.raise_error_expect("(")
+            self.raise_error_expect("(", self.current_token)
 
     def parse_arguments(self):
         if self.current_token and self.peek_prev_token() and self.peek_prev_token().type == TokenType.LPAREN:
             try:
                 args = []
-                if self.current_token and self.current_token.type == TokenType.IDENTIFIER:
+                if self.current_token and self.current_token.type in (TokenType.IDENTIFIER, TokenType.STRING, TokenType.INT, TokenType.FLOAT, TokenType.BOOL):
                     args.append(self.parse_expr())
-                    self.advance()
                     while self.current_token and self.current_token.type == TokenType.COMMA:
                         if self.current_token and self.current_token.type == TokenType.COMMA:
                             self.advance()
+                            if self.current_token and self.current_token.type not in (TokenType.IDENTIFIER, TokenType.INT, TokenType.FLOAT, TokenType.STRING, TokenType.BOOL, TokenType.NOTHING):
+                               return "error"
                         if self.current_token and self.current_token.type != TokenType.COMMA:
                             args.append(self.parse_expr())
-                            self.advance()
                 return args
             except Exception:
                 return "error"
@@ -167,7 +163,7 @@ class Parser:
         params = []
         body = []
         if self.current_token and self.current_token.type == TokenType.IDENTIFIER:
-            name = self.current_token
+            name = self.current_token.value
             self.advance()
             if self.current_token and self.current_token.type == TokenType.LPAREN:
                 self.advance()
@@ -189,6 +185,10 @@ class Parser:
                             body.append(stmt)
                         if self.current_token and self.current_token.type == TokenType.SEMICOLON:
                             self.advance()
+                        elif self.peek_prev_token() and self.peek_prev_token().type == TokenType.END:
+                            continue
+                        elif self.current_token and self.current_token.type == TokenType.END:
+                            break
                         else:
                             self.raise_error_expect(";", self.current_token)
                     if self.current_token and self.current_token.type == TokenType.END:
@@ -209,14 +209,12 @@ class Parser:
             try:
                 params = []
                 if self.current_token and self.current_token.type == TokenType.IDENTIFIER:
-                    params.append(ParameterNode(self.current_token))
-                    self.advance()
+                    params.append(ParameterNode(self.parse_expr()))
                     while self.current_token and self.current_token.type == TokenType.COMMA:
                         if self.current_token and self.current_token.type == TokenType.COMMA:
                             self.advance()
                         if self.current_token and self.current_token.type != TokenType.COMMA:
-                            params.append(ParameterNode(self.current_token))
-                            self.advance()
+                            params.append(ParameterNode(self.parse_expr()))
                 return params
             except Exception:
                 return "error"
@@ -313,7 +311,7 @@ class Parser:
             if self.current_token.type == TokenType.COLON:
                 self.advance()
                 body = []
-                while self.current_token.type != TokenType.END:
+                while self.current_token and self.current_token.type != TokenType.END:
                     stmt = self.parse_statement()
                     if stmt:
                         body.append(stmt)
@@ -321,11 +319,13 @@ class Parser:
                         self.advance()
                     else:
                         self.raise_error_expect(";")
-                if self.current_token.type == TokenType.END:
+                if self.current_token and self.current_token.type == TokenType.END:
                     self.advance()
                     return WhileNode(condition, body)
+                else:
+                    self.raise_error_expect("end")
             else:
-                self.raise_error_expect("end")
+                self.raise_error_expect(":")
         else:
             self.raise_error_expect("(")
 
@@ -356,14 +356,14 @@ class Parser:
                                     self.advance()
                                     unopchange = PostfixOpNode(postfixop_identifier.value, postfixop_op)
                                 else:
-                                    self.raise_error_expect(")")
+                                    self.raise_error_expect(")", self.current_token)
                             elif self.current_token and self.current_token.type == TokenType.EQUAL:
                                 self.advance()
                                 unopchange = AssignNode(postfixop_identifier.value, self.parse_expr())
                                 if self.current_token and self.current_token.type == TokenType.RPAREN:
                                     self.advance()
                                 else:
-                                    self.raise_error_expect(")")
+                                    self.raise_error_expect(")", self.current_token)
                             else:
                                 self.raise_error("Expected assignment in for statement")
                         # PRE-DECREMENT/INCREMENT
@@ -490,6 +490,8 @@ class Parser:
             self.advance()
             return LiteralNode(token)
         elif token.type == TokenType.IDENTIFIER:
+            if self.peek() and self.peek().type == TokenType.LPAREN:
+                return self.parse_function_call()
             self.advance()
             return VariableNode(token.value)
         elif token.type == TokenType.NOTHING:
