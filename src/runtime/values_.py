@@ -1,6 +1,17 @@
 from dataclasses import dataclass
 
 @dataclass
+class BuiltInFunctionValue:
+    name: any
+    func: any
+
+    def call(self, interpreter, args):
+        return self.func(interpreter, args)
+
+    def __repr__(self):
+        return (f"<builtin {self.name}>")
+
+@dataclass
 class IntValue:
     value: int
 

@@ -7,6 +7,7 @@ from runtime.environment import Environment
 class Interpreter:
     def __init__(self):
         self.env = Environment()
+        self.load_stdlib()
 
     def interpret(self, tree):
         if isinstance(tree, ProgramNode):
@@ -47,6 +48,9 @@ class Interpreter:
 
         # Evaluate arguments in the CURRENT environment (before switching)
         arg_values = [self.visit(arg) for arg in node.args]
+
+        if isinstance(func, BuiltInFunctionValue):
+            return func.call(self, arg_values)
         
         call_env = Environment(func.env)
         call_env.enter_scope()
@@ -136,7 +140,9 @@ class Interpreter:
             if op in ('+', '-', '*', '/') and None in (left, right):
                 print(left)
                 raise TypeError(f"Cannot perform operations with 'Nothing' type")
-            if op == '+': return (left+right)
+            if op == '+':
+                if isinstance(left, str) or isinstance(right, str):
+                    return (str(left)+str(right))
             elif op == '-': return (left-right)
             elif op == '*': return (left*right)
             elif op == '/':
@@ -217,3 +223,46 @@ class Interpreter:
             return StringValue(token.value)
         elif token.type == TokenType.BOOL:
             return BoolValue(token.value)
+        
+    def load_stdlib(self):
+        def builtin_print(interpreter, args):
+            values = [getattr(arg, 'value', arg) for arg in args]
+            print(*values)
+            return NothingValue(None)
+        
+        def builtin_int(interpreter, args):
+            if not args:
+                raise Exception("int() needs 1 argument")
+            elif len(args) > 1:
+                raise Exception("int() only takes in 1 argument")
+            return IntValue(int(getattr(args[0], 'value', args[0])))
+        
+        def builtin_float(interpreter, args):
+            if not args:
+                raise Exception("float() needs 1 argument")
+            elif len(args) > 1:
+                raise Exception("float() only takes in 1 argument")
+            return FloatValue(float(getattr(args[0], 'value', args[0])))
+        
+        def builtin_string(interpreter, args):
+            if not args:
+                raise Exception("string() needs 1 argument")
+            elif len(args) > 1:
+                raise Exception("string() only takes in 1 argument")
+            return StringValue(int(getattr(args[0], 'value', args[0])))
+        
+        def builtin_type(interpreter, args):
+            if not args:
+                raise Exception("string() needs 1 argument")
+            elif len(args) > 1:
+                raise Exception("string() only takes in 1 argument")
+            return StringValue(int(getattr(args[0], 'value', args[0])))
+
+
+        # def builtin_sqrt(interpreter, args):
+        #     values = 
+        
+        self.env.declare("print", BuiltInFunctionValue("print", builtin_print))
+        self.env.declare("int", BuiltInFunctionValue("int", builtin_int))
+        self.env.declare("float", BuiltInFunctionValue("float", builtin_float))
+        self.env.declare("string", BuiltInFunctionValue("string", builtin_string))
