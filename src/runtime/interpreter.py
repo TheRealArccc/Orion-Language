@@ -30,39 +30,46 @@ class Interpreter:
         return result
     
     def visit_ReturnNode(self, node):
+        print("RETURN: ", self.visit(node.value))
         raise ReturnSignal(self.visit(node.value))
     
     def visit_ParameterNode(self, node):
-        print(node.params.value)
-        return node.params.value
+        print("PARAM: ", type(node.params))
+        return node.params.identifier
 
     def visit_FunctionDefNode(self, node):
         function = FunctionValue(node.name, node.params, node.body, self.env)
         self.env.declare(node.name, function)
+        print("SCOPES: ", self.env.scopes)
 
     def visit_FunctionCallNode(self, node):
         func = self.env.get(node.name.value)
 
+        # Evaluate arguments in the CURRENT environment (before switching)
+        arg_values = [self.visit(arg) for arg in node.args]
+        
         call_env = Environment(func.env)
         call_env.enter_scope()
 
         old_env = self.env
         self.env = call_env
-        for param, arg in zip(func.params, node.args):
-            call_env.declare(self.visit(param), self.visit(arg))
+        
+        # Declare parameters with pre-evaluated argument values
+        for param, arg_value in zip(func.params, arg_values):
+            param_name = self.visit(param)
+            call_env.declare(param_name, arg_value)
         
         try:
             for stmt in func.body:
                 self.visit(stmt)
         except ReturnSignal as r:
             result = r.value
-            return r
+            call_env.exit_scope()
+            self.env = old_env
+            return result
 
         call_env.exit_scope()
         self.env = old_env
-
-        print(func)
-        print(self.env.scopes)
     
     def visit_WhileNode(self, node):
         self.env.enter_scope()
@@ -100,25 +107,25 @@ class Interpreter:
         value = self.visit(node.value)
         identifier = node.identifier
         self.env.assign(identifier, value)
-        print("SCOPE: ", self.env.scopes)
+        print("ASSIGN: ", self.env.scopes)
 
     def visit_VarDeclNode(self, node):
         value = self.visit(node.value)
         self.env.declare(node.identifier, value)
-        print("SCOPE: ", self.env.scopes)
+        print("DECL: ", self.env.scopes)
 
     def visit_UnaryOpNode(self, node):
         operand = self.visit(node.operand)
         op = node.op
         if op.value == '+':
-            if node.operand.literal.type == TokenType.INT:
+            if isinstance(operand, IntValue):
                 return IntValue(operand.value)
-            elif node.operand.literal.type == TokenType.FLOAT:
+            elif isinstance(operand, FloatValue):
                 return FloatValue(operand.value)
         elif op.value == '-':
-            if node.operand.literal.type == TokenType.INT:
+            if isinstance(operand, IntValue):
                 return IntValue(operand.value * -1)
-            elif node.operand.literal.type == TokenType.FLOAT:
+            elif isinstance(operand, FloatValue):
                 return FloatValue(operand.value * -1)
 
     def visit_BinaryOpNode(self, node):
@@ -141,18 +148,20 @@ class Interpreter:
             elif op == '<=': return bool(left<=right)
             elif op == '>=': return bool(left>=right)
             elif op == '!=': return bool(left!=right)
-            elif op == '&&':
-                if left == False:
-                    return False
-                return bool(right)
-            elif op == '||':
-                if right == True:
-                    return right
-                return bool(left)
 
-        left = self.visit(node.left)
-        right = self.visit(node.right)
         op = node.op
+        left = self.visit(node.left)
+        if op.type == TokenType.AND:
+            if left == False:
+                return False
+            else:
+                return self.visit(node.right)
+        elif op.type == TokenType.OR:
+            if left:
+                return True
+            else:
+                return self.visit(node.right)
+        right = self.visit(node.right)
         if op.type == TokenType.PLUS:
             return eval_values(left, '+', right)
         elif op.type == TokenType.MINUS:
@@ -174,10 +183,6 @@ class Interpreter:
             return eval_values(left, '>=', right)
         elif op.type == TokenType.NOTEQ:
             return eval_values(left, '!=', right)
-        elif op.type == TokenType.AND:
-            return eval_values(left, '&&', right)
-        elif op.type == TokenType.OR:
-            return eval_values(left, '||', right)
         
     def visit_VariableNode(self, node):
         identifier = node.identifier
