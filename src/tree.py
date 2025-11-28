@@ -40,12 +40,36 @@ class UnaryOpNode:
         return (f"{self.op.value}{self.operand}")
 
 @dataclass
-class PostfixOpNode:
+class PostfixOpNode: ###
     identifier: str
     op: any
 
     def __repr__(self):
         return (f"({self.identifier}{self.op.value})")
+    
+@dataclass
+class ArrayNode:
+    elements: list
+
+    def __repr__(self):
+        return f"({self.elements})"
+    
+@dataclass
+class IndexAccessNode:
+    array: any
+    index: any
+
+    def __repr__(self):
+        return f"({self.array}[{self.index}])"
+    
+@dataclass
+class IndexAssignNode:
+    array: any
+    index: any
+    value: any
+
+    def __repr__(self):
+        return f"({self.array}[{self.index}] = {self.value})"
     
 @dataclass
 class VariableNode:
@@ -73,8 +97,8 @@ class AssignNode:
 @dataclass
 class IfNode:
     condition: any
-    body: any
-    else_body: any = None
+    body: list
+    else_body: list = None
 
     def __repr__(self):
         return (f"(IF {self.condition} THEN \n\t{self.body} \n\tELSE {self.else_body})")
@@ -82,7 +106,7 @@ class IfNode:
 @dataclass
 class WhileNode:
     condition: any
-    body: any
+    body: list
 
     def __repr__(self):
         return (f"(WHILE {self.condition} DO {self.body})")
@@ -92,17 +116,17 @@ class ForNode:
     init: any
     condition: any
     increment: any
-    body: any
+    body: list
 
     def __repr__(self):
         return (f"(FOR {self.init}; {self.condition}; {self.increment} DO {self.body})")
     
 @dataclass
 class ParameterNode:
-    parameter: any
+    params: any
 
     def __repr__(self):
-        return f"({self.parameter})"
+        return f"({self.params})"
     
 @dataclass
 class ArgumentNode:
@@ -123,7 +147,7 @@ class FunctionDefNode:
 @dataclass
 class FunctionCallNode:
     name: str
-    args: ArgumentNode
+    args: list
 
     def __repr__(self):
         return (f"(CALL {self.name.value}({self.args}))")
