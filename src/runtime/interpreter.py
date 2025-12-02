@@ -58,6 +58,60 @@ class Interpreter:
 
         arr[index] = value
         return value
+    
+    def visit_MethodCallNode(self, node):
+        def handle_array_method(arr, method, args):
+            match(method):
+                case 'push':
+                    if len(args) < 1:
+                        self.raise_error("push() method takes at least 1 argument")
+                    
+                    for i in args:
+                        arr.append(i)
+                
+                case 'pop':
+                    if len(args) > 0:
+                        self.raise_error("pop() method takes no arguments")
+                    arr.pop()
+
+                case 'insert':
+                    if len(args) != 2:
+                        self.raise_error("insert() method takes exactly 2 arguments: (index, value)")
+
+                    idx, value = args
+                    
+                    if not isinstance(idx.value, int):
+                        self.raise_error("insert(): index argument must be an integer")
+                    if idx.value < 0 or idx.value >= len(arr):
+                        self.raise_error("insert(): index argument is out of bounds")
+
+                    arr.insert(idx.value, value)
+
+                case 'delete':
+                    if len(args) != 1:
+                        self.raise_error("delete() method takes exactly 1 argument")
+                    
+                    idx = args[0]
+                    
+                    if not isinstance(idx.value, int):
+                        self.raise_error("delete(): index argument must be an integer")
+                    if idx.value < 0 or idx.value >= len(arr):
+                        self.raise_error("delete(): index argument is out of bounds")
+
+                    arr.pop(idx.value)
+
+                case _:
+                    self.raise_error(f"Unknown array method '{method}'")
+
+        obj = self.visit(node.object_expr)
+
+        method = node.method_name
+        args = [self.visit(arg) for arg in node.args]
+
+        if isinstance(obj, list):
+            return handle_array_method(obj, method, args)
+        
+        raise Exception(f"'{method}' cannot be called on this type")
 
     def visit_ArrayNode(self, node):
         return [self.visit(element) for element in node.elements]
@@ -283,8 +337,14 @@ class Interpreter:
                 raise Exception("string() needs 1 argument")
             elif len(args) > 1:
                 raise Exception("string() only takes in 1 argument")
-            return StringValue(int(getattr(args[0], 'value', args[0])))
-
+            return type(args)
+        
+        def builtin_size(interpreter, args):
+            if not args:
+                raise Exception("size() needs 1 argument")
+            elif len(args) > 1:
+                raise Exception("size() only takes in 1 argument")
+            return len(getattr(args[0], 'value', args[0]))
 
         # def builtin_sqrt(interpreter, args):
         #     values = 
@@ -293,3 +353,4 @@ class Interpreter:
         self.env.declare("int", BuiltInFunctionValue("int", builtin_int))
         self.env.declare("float", BuiltInFunctionValue("float", builtin_float))
         self.env.declare("string", BuiltInFunctionValue("string", builtin_string))
+        self.env.declare("size", BuiltInFunctionValue("size", builtin_size))

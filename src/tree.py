@@ -52,7 +52,7 @@ class ArrayNode:
     elements: list
 
     def __repr__(self):
-        return f"({self.elements})"
+        return f"ARRAY({self.elements})"
     
 @dataclass
 class IndexAccessNode:
@@ -76,7 +76,7 @@ class VariableNode:
     identifier: str
 
     def __repr__(self):
-        return self.identifier
+        return (f"({self.identifier})")
     
 @dataclass
 class VarDeclNode:
@@ -151,6 +151,15 @@ class FunctionCallNode:
 
     def __repr__(self):
         return (f"(CALL {self.name.value}({self.args}))")
+    
+@dataclass
+class MethodCallNode:
+    object_expr: any
+    method_name: any
+    args: any
+
+    def __repr__(self):
+        return (f"({self.object_expr}.{self.method_name}({self.args}))")
     
 @dataclass
 class ReturnNode:

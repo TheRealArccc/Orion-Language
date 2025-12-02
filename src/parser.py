@@ -86,6 +86,8 @@ class Parser:
             return self.parse_assignment()
         elif peek != None and peek.type == TokenType.LPAREN:
             return self.parse_function_call()
+        elif peek != None and peek.type == TokenType.DOT:
+            return self.parse_method_call()
         else:
             self.raise_error(f"Invalid token after: {self.current_token}")
     
@@ -191,7 +193,25 @@ class Parser:
         value = self.parse_expr()
         return ReturnNode(value)
 
-    # FUNCTIONS
+    # FUNCTIONS AND METHODS
+    def parse_method_call(self):
+        node = VariableNode(self.current_token.value)
+        self.advance()
+        while self.current_token and self.current_token.type == TokenType.DOT:
+            self.advance()
+            method_name = self.current_token.value
+            self.advance()
+            self.advance()
+            args = self.parse_arguments()
+            if self.current_token and self.current_token.type == TokenType.RPAREN:
+                self.advance()
+            else:
+                self.raise_error_expect(")", self.current_token)
+            node = MethodCallNode(node, method_name, args)
+            if args and args == "error":
+                self.raise_error(f"Unexpected argument error for method '{method_name}()'")
+        return node
+
     def parse_function_call(self):
         name = self.current_token
         self.advance()
@@ -212,7 +232,7 @@ class Parser:
         if self.current_token and self.peek_prev_token() and self.peek_prev_token().type == TokenType.LPAREN:
             try:
                 args = []
-                if self.current_token and self.current_token.type in (TokenType.IDENTIFIER, TokenType.STRING, TokenType.INT, TokenType.FLOAT, TokenType.BOOL):
+                if self.current_token and self.current_token.type in (TokenType.IDENTIFIER, TokenType.STRING, TokenType.INT, TokenType.FLOAT, TokenType.BOOL, TokenType.LBRACKET, TokenType.LPAREN):
                     args.append(self.parse_expr())
                     while self.current_token and self.current_token.type == TokenType.COMMA:
                         if self.current_token and self.current_token.type == TokenType.COMMA:
