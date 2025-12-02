@@ -9,6 +9,9 @@ class Interpreter:
         self.env = Environment()
         self.load_stdlib()
 
+    def raise_error(self, message):
+        raise Exception(message)
+
     def interpret(self, tree):
         if isinstance(tree, ProgramNode):
             self.visit(tree)
@@ -16,7 +19,6 @@ class Interpreter:
     def visit(self, node):
         method_name = f'visit_{node.__class__.__name__}'
         method = getattr(self, method_name, self.no_visit_method)
-        print(method_name)
         return method(node)
 
     def no_visit_method(self, node):
@@ -30,18 +32,45 @@ class Interpreter:
 
         return result
     
+    def visit_IndexAccessNode(self, node):
+        arr = self.visit(node.array)
+        index = self.visit(node.index).value
+        if not isinstance(arr, list):
+            self.raise_error("Cannot index non-list")
+        if not isinstance(index, int):
+            self.raise_error("Cannot index with non-integer")
+        if abs(index) > len(arr):
+            self.raise_error("Index is out of range")
+
+        return arr[index]
+    
+    def visit_IndexAssignNode(self, node):
+        arr = self.visit(node.array)
+        index = self.visit(node.index).value
+        value = self.visit(node.value)
+
+        if not isinstance(arr, list):
+            self.raise_error("Cannot index non-list")
+        if not isinstance(index, int):
+            self.raise_error("Cannot index with non-integer")
+        if abs(index) > len(arr):
+            self.raise_error("Index is out of range")
+
+        arr[index] = value
+        return value
+
+    def visit_ArrayNode(self, node):
+        return [self.visit(element) for element in node.elements]
+    
     def visit_ReturnNode(self, node):
-        print("RETURN: ", self.visit(node.value))
         raise ReturnSignal(self.visit(node.value))
     
     def visit_ParameterNode(self, node):
-        print("PARAM: ", type(node.params))
         return node.params.identifier
 
     def visit_FunctionDefNode(self, node):
         function = FunctionValue(node.name, node.params, node.body, self.env)
         self.env.declare(node.name, function)
-        print("SCOPES: ", self.env.scopes)
 
     def visit_FunctionCallNode(self, node):
         func = self.env.get(node.name.value)
@@ -109,14 +138,12 @@ class Interpreter:
     
     def visit_AssignNode(self, node):
         value = self.visit(node.value)
-        identifier = node.identifier
+        identifier = node.identifier.identifier
         self.env.assign(identifier, value)
-        print("ASSIGN: ", self.env.scopes)
 
     def visit_VarDeclNode(self, node):
         value = self.visit(node.value)
         self.env.declare(node.identifier, value)
-        print("DECL: ", self.env.scopes)
 
     def visit_UnaryOpNode(self, node):
         operand = self.visit(node.operand)
@@ -138,11 +165,11 @@ class Interpreter:
             right = getattr(right, 'value', right)
             # Nothing value
             if op in ('+', '-', '*', '/') and None in (left, right):
-                print(left)
                 raise TypeError(f"Cannot perform operations with 'Nothing' type")
             if op == '+':
                 if isinstance(left, str) or isinstance(right, str):
                     return (str(left)+str(right))
+                return (left+right)
             elif op == '-': return (left-right)
             elif op == '*': return (left*right)
             elif op == '/':

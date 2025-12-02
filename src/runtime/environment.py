@@ -12,9 +12,9 @@ class Environment:
 
     def declare(self, identifier, value):
         current_scope = self.scopes[-1]
-        if identifier in current_scope:
+        if str(identifier) in current_scope:
             raise Exception(f"'{identifier}' already exists")
-        current_scope[identifier] = value
+        current_scope[str(identifier)] = value
 
     def assign(self, identifier, value):
         for scope in reversed(self.scopes):
@@ -29,7 +29,6 @@ class Environment:
         raise Exception(f"'{identifier}' is not declared")
     
     def get(self, identifier):
-        self.debug()
         for scope in reversed(self.scopes):
             if identifier in scope:
                 value = scope.get(identifier)

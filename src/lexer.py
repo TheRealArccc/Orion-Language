@@ -3,10 +3,10 @@ from enum import Enum
 
 WHITESPACE = ' \n\t'
 DIGITS = '0123456789.'
-KEYWORDS = ["var", "if", "else", "while", "for", "end", "return", "fn", "Nothing"]
+KEYWORDS = ["var", "if", "else", "while", "for", "end", "return", "fn", "Nothing", "array"]
 LETTERS_LOWER = 'abcdefghijklmnopqrstuvwxyz'
 IDENTIFIERS_CHARS = '01234567890abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-RESERVED_SYMBOLS = '"''=\\;,.<>=^():+-*/!^%'
+RESERVED_SYMBOLS = '"''=\\;,.<>=^():+-*/!^%[]}{'
 
 class TokenType(Enum):
     INT = 0
@@ -57,6 +57,10 @@ class TokenType(Enum):
 
     FUNC = 39
     NOTHING = 40
+
+    LBRACKET = 41
+    RBRACKET = 42
+    ARRAY = 43
 
 @dataclass
 class Token:
@@ -147,6 +151,12 @@ class Lexer:
                 self.advance()
             elif self.current_char == '}':
                 yield Token(TokenType.RBRACE, self.current_char)
+                self.advance()
+            elif self.current_char == '[':
+                yield Token(TokenType.LBRACKET, self.current_char)
+                self.advance()
+            elif self.current_char == ']':
+                yield Token(TokenType.RBRACKET, self.current_char)
                 self.advance()
             elif self.current_char == ';':
                 yield Token(TokenType.SEMICOLON, self.current_char)
@@ -361,6 +371,8 @@ class Lexer:
         if current_word in KEYWORDS:
             if current_word == 'var':
                 return self.generate_keyword(TokenType.VAR, current_word)
+            elif current_word == 'array':
+                return self.generate_keyword(TokenType.ARRAY, current_word)
             elif current_word == 'if':
                 return self.generate_keyword(TokenType.IF, current_word)
             elif current_word == 'else':
