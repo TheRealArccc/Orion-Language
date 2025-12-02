@@ -282,8 +282,11 @@ class Lexer:
         dp_count = 0
         if self.current_char == '.':
             dp_count += 1
-            
-        self.advance()
+            self.advance()
+            if str(self.current_char) not in DIGITS:
+                return Token(TokenType.DOT, ".")
+        else:
+            self.advance()
 
         while str(self.current_char) in DIGITS and self.current_char != None:
             if str(self.current_char) in DIGITS:
