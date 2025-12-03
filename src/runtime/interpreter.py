@@ -2,6 +2,7 @@ from lexer import TokenType
 from runtime.values_ import *
 from tree import *
 from runtime.environment import Environment
+import sys
 # from utils.errors import *
 
 class Interpreter:
@@ -345,6 +346,20 @@ class Interpreter:
             elif len(args) > 1:
                 raise Exception("size() only takes in 1 argument")
             return len(getattr(args[0], 'value', args[0]))
+        
+        def builtin_ask(interpreter, args):
+            if not args:
+                raise Exception("ask() needs 1 argument")
+            elif len(args) > 1:
+                raise Exception("ask() only takes in 1 argument")
+            return input(args[0])
+        
+        def builtin_terminate(interpreter, args):
+            if args:
+                raise Exception("terminate() takes exactly no arguments")
+            elif len(args) > 1:
+                raise Exception("terminate() takes exactly no arguments")
+            quit()
 
         # def builtin_sqrt(interpreter, args):
         #     values = 
@@ -354,3 +369,5 @@ class Interpreter:
         self.env.declare("float", BuiltInFunctionValue("float", builtin_float))
         self.env.declare("string", BuiltInFunctionValue("string", builtin_string))
         self.env.declare("size", BuiltInFunctionValue("size", builtin_size))
+        self.env.declare("ask", BuiltInFunctionValue("ask", builtin_ask))
+        self.env.declare("terminate", BuiltInFunctionValue("terminate", builtin_terminate))
