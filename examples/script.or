@@ -1,0 +1,51 @@
+// variables and arrays
+var x = 1;
+array y = [1, 2, 3];
+
+// functions
+fn factorial(n):
+    if (n==1):
+        return 1;
+    else if (n==1):
+        return n*factorial(n-1);
+    end
+end
+
+// for loop
+for (var i=0; i<4; i++):
+  print(i);
+end
+
+// if statement
+if (x != Nothing):
+    print(x, "something");
+end
+
+print(factorial(3));
+
+// while loop
+while (size(y) != 10):
+    y.push("yes");
+end
+
+array twod = [y, [4, 5, 6]];
+
+print(twod[1][0]);
+
+twod.push("a");
+twod.pop();
+twod.insert(1, "val");
+twod.delete(1);
+print(twod);
+
+var input = ask("terminate? : ");
+
+if (input == 'yes'):
+    terminate();
+else if (input == 'maybe'):
+    print("maybe");
+else if (input != 'yes' && input == 'no'):
+    print("no");
+else:
+    print("not yes");
+end
