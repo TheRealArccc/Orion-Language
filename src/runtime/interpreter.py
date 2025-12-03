@@ -165,7 +165,6 @@ class Interpreter:
             for stmt in node.body:
                 self.visit(stmt)
         self.env.exit_scope()
-        print(self.env.scopes)
     
     def visit_ForNode(self, node):
         self.env.enter_scope()
@@ -176,7 +175,6 @@ class Interpreter:
             
             self.visit(node.increment)
         self.env.exit_scope()
-        print(self.env.scopes)
 
     def visit_IfNode(self, node):
         condition = self.visit(node.condition)
@@ -331,7 +329,7 @@ class Interpreter:
                 raise Exception("string() needs 1 argument")
             elif len(args) > 1:
                 raise Exception("string() only takes in 1 argument")
-            return StringValue(int(getattr(args[0], 'value', args[0])))
+            return StringValue(str(getattr(args[0], 'value', args[0])))
         
         def builtin_type(interpreter, args):
             if not args:
