@@ -3,30 +3,29 @@ from lexer import Lexer
 from parser import Parser
 from runtime.interpreter import Interpreter
 
+current_ver = "0.1.0"
 start_time = time.perf_counter()
 
-def main():
-    file_path = r'C:\Users\ryann_xf04h2j\OneDrive\Documents\other scripts\PROJECTS\InterTestBuild\v3\script.txt'
-    
+def run_file(file_path):
     try:
         with open(file_path, 'r') as file:
             content = file.read()
             
         lexer = Lexer(content)
         tokens = list(lexer.generate_tokens())
-        print(tokens)
+        # print(tokens)
         parser = Parser(tokens)
         tree = parser.parse()
-        print(tree)
+        # print(tree)
 
         interpreter = Interpreter()
-        result = interpreter.interpret(tree)
-        print(result)
+        interpreter.interpret(tree)
+        # print(interpreter.env.scopes)
     except FileNotFoundError:
         raise 'file does not exist'
 
 if __name__ == '__main__':
-    main()
+    pass
 
 end_time = time.perf_counter()
-print(f"Executed in {(end_time-start_time)*1000:.4f}ms")
+# print(f"Executed in {(end_time-start_time)*1000:.4f}ms")
