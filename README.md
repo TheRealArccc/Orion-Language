@@ -44,12 +44,12 @@ x.pop();
 #### `insert()` : inserts an element at the specified index
 ```
 x.insert(0, "abc");
-// ["abc", 1, 2, 3, 4]
+// ["abc", 1, 2, 3, 4, 5]
 ```
 #### `delete()` : deletes the specified index of an array (the outermost dimension)
 ```
 x.delete(1);
-// [1, 3, 4]
+// [1, 3, 4, 5]
 ```
 
 ## Data types
