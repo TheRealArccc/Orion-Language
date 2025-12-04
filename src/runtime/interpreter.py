@@ -191,7 +191,7 @@ class Interpreter:
     
     def visit_AssignNode(self, node):
         value = self.visit(node.value)
-        identifier = node.identifier.identifier
+        identifier = getattr(node.identifier, 'identifier', node.identifier)
         self.env.assign(identifier, value)
 
     def visit_VarDeclNode(self, node):
@@ -307,7 +307,10 @@ class Interpreter:
     def load_stdlib(self):
         def builtin_print(interpreter, args):
             values = [getattr(arg, 'value', arg) for arg in args]
-            print(*values)
+            for val in values:
+                if isinstance(val, (FunctionValue, BuiltInFunctionValue)):
+                    self.raise_error(f"function {val.name}() has invalid syntax when called")
+                print(val)
             return NothingValue(None)
         
         def builtin_int(interpreter, args):

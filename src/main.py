@@ -22,7 +22,7 @@ def run_file(file_path):
         interpreter.interpret(tree)
         # print(interpreter.env.scopes)
     except FileNotFoundError:
-        raise 'file does not exist'
+        raise Exception('file does not exist')
 
 if __name__ == '__main__':
     pass

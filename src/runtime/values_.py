@@ -42,10 +42,12 @@ class BoolValue:
 @dataclass
 class VariableValue:
     value: any
-    
-@dataclass
+
 class NothingValue:
-    value: None
+    def __init__(self, value=None):
+        self.value = value
+        if value == None:
+            self.value = 'Nothing'
 
     def __repr__(self):
         return (f"{self.value}")

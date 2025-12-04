@@ -78,7 +78,7 @@ class Parser:
         else:
             # if token and token.type in (TokenType.INT, TokenType.FLOAT, TokenType.STRING, TokenType.MUL, TokenType.DIV, TokenType.PLUS, TokenType.MINUS, TokenType.LPAREN, TokenType.RPAREN):
             #     return self.parse_expr()
-            return self.raise_error(f"Unexpected token: {token}")
+            return self.raise_error(f"Unexpected token: {token.value}")
         
     def parse_identifier(self):
         peek = self.peek()
@@ -321,7 +321,7 @@ class Parser:
             if self.current_token.type == TokenType.RPAREN:
                 self.advance()
             else:
-                self.raise_error_expect(")", self.current_token.value)
+                self.raise_error_expect(")", self.current_token)
 
             # BODY
             if self.current_token.type == TokenType.COLON:

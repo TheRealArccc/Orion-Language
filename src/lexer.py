@@ -127,7 +127,6 @@ class Lexer:
                 self.advance()
             elif self.current_char == '/': # HANDLES COMMENTS
                 self.advance()
-                print(self.current_char)
                 if self.current_char == "/":
                     self.skip_comments()
                 elif self.current_char == None:
