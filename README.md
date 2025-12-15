@@ -89,6 +89,11 @@ var str = "Hello" + ", " + "World";
 print(str);
 // Hello, World
 ```
+
+## Boolean Operators
+`&&` : AND operator  
+`||`: OR operator
+
 ## If statements
 ```
 if (condition):
