@@ -6,6 +6,13 @@ class ProgramNode:
 
     def __repr__(self):
         return (f"PROGRAM({self.body})")
+    
+@dataclass
+class NotNode:
+    body: any
+
+    def __repr__(self):
+        return (f"NOT({self.body})")
 
 @dataclass
 class BinaryOpNode:

@@ -270,6 +270,10 @@ class Interpreter:
         elif op.type == TokenType.NOTEQ:
             return eval_values(left, '!=', right)
         
+    def visit_NotNode(self, node):
+        bool = self.visit(node.body)
+        return not bool
+        
     def visit_VariableNode(self, node):
         identifier = node.identifier
         value = self.env.get(identifier)
@@ -362,6 +366,15 @@ class Interpreter:
                 raise Exception("terminate() takes exactly no arguments")
             quit()
 
+        def builtin_find(interpreter, args):
+            if len(args) != 2:
+                raise Exception("find() takes in exactly 2 arguments")
+            
+            element = getattr(args[0], 'value', args[0])
+            target = getattr(args[1], 'value', args[1])
+
+            return element in target
+
         # def builtin_sqrt(interpreter, args):
         #     values = 
         
@@ -372,3 +385,4 @@ class Interpreter:
         self.env.declare("size", BuiltInFunctionValue("size", builtin_size))
         self.env.declare("ask", BuiltInFunctionValue("ask", builtin_ask))
         self.env.declare("terminate", BuiltInFunctionValue("terminate", builtin_terminate))
+        self.env.declare("find", BuiltInFunctionValue("find", builtin_find))

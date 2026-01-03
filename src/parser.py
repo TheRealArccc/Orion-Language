@@ -232,12 +232,12 @@ class Parser:
         if self.current_token and self.peek_prev_token() and self.peek_prev_token().type == TokenType.LPAREN:
             try:
                 args = []
-                if self.current_token and self.current_token.type in (TokenType.IDENTIFIER, TokenType.STRING, TokenType.INT, TokenType.FLOAT, TokenType.BOOL, TokenType.LBRACKET, TokenType.LPAREN):
+                if self.current_token and self.current_token.type in (TokenType.IDENTIFIER, TokenType.STRING, TokenType.INT, TokenType.FLOAT, TokenType.BOOL, TokenType.LBRACKET, TokenType.LPAREN, TokenType.NOTHING, TokenType.NOT):
                     args.append(self.parse_expr())
                     while self.current_token and self.current_token.type == TokenType.COMMA:
                         if self.current_token and self.current_token.type == TokenType.COMMA:
                             self.advance()
-                            if self.current_token and self.current_token.type not in (TokenType.IDENTIFIER, TokenType.INT, TokenType.FLOAT, TokenType.STRING, TokenType.BOOL, TokenType.NOTHING):
+                            if self.current_token and self.current_token.type not in (TokenType.IDENTIFIER, TokenType.STRING, TokenType.INT, TokenType.FLOAT, TokenType.BOOL, TokenType.LBRACKET, TokenType.LPAREN, TokenType.NOTHING):
                                return "error"
                         if self.current_token and self.current_token.type != TokenType.COMMA:
                             args.append(self.parse_expr())
@@ -529,14 +529,18 @@ class Parser:
         return left
 
     def parse_expr(self):
-        left = self.parse_term()
-
-        while self.current_token != None and self.current_token.type in (TokenType.PLUS, TokenType.MINUS): 
-            op = self.current_token
+        if self.current_token and self.current_token.type == TokenType.NOT:
             self.advance()
-            right = self.parse_term()
-            left = BinaryOpNode(left, op, right)
-        return left
+            return NotNode(self.parse_expr())
+        else:
+            left = self.parse_term()
+
+            while self.current_token != None and self.current_token.type in (TokenType.PLUS, TokenType.MINUS): 
+                op = self.current_token
+                self.advance()
+                right = self.parse_term()
+                left = BinaryOpNode(left, op, right)
+            return left
     
     def parse_term(self):
         left = self.parse_factor()
