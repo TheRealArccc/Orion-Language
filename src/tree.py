@@ -12,7 +12,7 @@ class NotNode:
     body: any
 
     def __repr__(self):
-        return (f"NOT({self.body})")
+        return (f"(NOT({self.body}))")
 
 @dataclass
 class BinaryOpNode:
@@ -167,6 +167,14 @@ class MethodCallNode:
 
     def __repr__(self):
         return (f"({self.object_expr}.{self.method_name}({self.args}))")
+    
+@dataclass
+class ImportNode:
+    name: str
+    path: str
+
+    def __repr__(self):
+        return (f"IMPORT({self.path} AS {self.name})")
     
 @dataclass
 class ReturnNode:

@@ -3,7 +3,7 @@ from enum import Enum
 
 WHITESPACE = ' \n\t'
 DIGITS = '0123456789.'
-KEYWORDS = ["var", "if", "else", "while", "for", "end", "return", "fn", "Nothing", "array"]
+KEYWORDS = ["var", "if", "else", "while", "for", "end", "return", "fn", "Nothing", "array", "import", "as"]
 LETTERS_LOWER = 'abcdefghijklmnopqrstuvwxyz'
 IDENTIFIERS_CHARS = '01234567890abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 RESERVED_SYMBOLS = '"''=\\;,.<>=^():+-*/!^%[]}{'
@@ -61,6 +61,9 @@ class TokenType(Enum):
     LBRACKET = 41
     RBRACKET = 42
     ARRAY = 43
+
+    IMPORT = 44
+    AS = 45
 
 @dataclass
 class Token:
@@ -391,6 +394,10 @@ class Lexer:
                 return self.generate_keyword(TokenType.FUNC, current_word)
             elif current_word == 'Nothing':
                 return self.generate_keyword(TokenType.NOTHING, current_word)
+            elif current_word == 'import':
+                return self.generate_keyword(TokenType.IMPORT, current_word)
+            elif current_word == 'as':
+                return self.generate_keyword(TokenType.AS, current_word)
         elif current_word in ("True", "False"):
             return self.generate_bool(current_word)
         else:

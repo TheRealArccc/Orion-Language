@@ -75,6 +75,8 @@ class Parser:
             return self.parse_function_def()
         elif token.type == TokenType.RETURN:
             return self.parse_return_statement()
+        elif token.type == TokenType.IMPORT:
+            return self.parse_import_statement()
         else:
             # if token and token.type in (TokenType.INT, TokenType.FLOAT, TokenType.STRING, TokenType.MUL, TokenType.DIV, TokenType.PLUS, TokenType.MINUS, TokenType.LPAREN, TokenType.RPAREN):
             #     return self.parse_expr()
@@ -192,6 +194,36 @@ class Parser:
             return ReturnNode(NothingLiteralNode(None))
         value = self.parse_expr()
         return ReturnNode(value)
+    
+    # IMPORT
+    def parse_import_statement(self):
+        path = ""
+        identifier = ""
+        self.advance()
+        if self.current_token and self.current_token.type == TokenType.IDENTIFIER:
+            path += self.current_token.value
+            self.advance()
+            while self.current_token and self.current_token.type == TokenType.DOT:
+                path += "\\"
+                self.advance()
+                path += self.current_token.value
+                print(path)
+                self.advance()
+
+            if self.current_token and self.current_token.type == TokenType.AS:
+                self.advance()
+                if self.current_token and self.current_token.type == TokenType.IDENTIFIER:
+                    identifier = self.current_token.value
+                    self.advance()
+                else:
+                    self.raise_error("Expected identifier assigned to import module")
+            else:
+                identifier = self.peek_prev_token().value
+                
+            return ImportNode(name=identifier, path=path)
+        else:
+            self.raise_error("Expected import path")
+            
 
     # FUNCTIONS AND METHODS
     def parse_method_call(self):
