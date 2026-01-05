@@ -15,6 +15,11 @@ orion <script.or>
 <br>
 
 # ℹ️ Documentation
+## Whats new in Orion 0.2.0
+* Support for module imports
+* Added `math` module
+* Boolean inversion
+* New global function `find()`
 
 ## Variables
 Variables can be declared with the **`var`** keyword
@@ -53,6 +58,10 @@ x.delete(1);
 ```
 
 ## Data types
+Data types built into Orion are as follows: `string`, `int`, `float`, `True`, `False`, `Nothing`
+
+<hr />
+
 `null` values can be assigned using the **`Nothing`** keyword:
 ```
 var a = Nothing;
@@ -90,7 +99,19 @@ print(str);
 // Hello, World
 ```
 
-## Boolean Operators
+## Booleans
+
+`True` and `False` can be inverted interchangeably
+
+Boolean inversion using `!`:
+```
+var x = True;
+
+print(!x);
+```
+
+## Boolean operators
+
 `&&` : AND operator  
 `||`: OR operator
 
@@ -167,5 +188,35 @@ print("Hello," "world");
 // Hello, world
 ```
 
-## Termination
-`terminate()` : exits the program
+## Importing modules
+Make multiple `.or` files work together!
+
+**Syntax:**
+```
+import <YOUR_FILE_HERE> as <NAME>
+                        (optional)
+```
+### Example
+If you want to import from `\example\animals.or`:
+```
+import example.animals
+
+print(animals.bark())
+
+// some logic here
+```
+
+## Math module
+Math is easy with `import math`!
+
+| Name | Usage | Description |
+|----------|-----------|-------------|
+|`math.sqrt()`|`math.sqrt(number)`|returns the square root of a given number|
+|`math.pi`|`math.pi`|mathematical constant pi|
+|`math.pi`|`math.e`|euler's number|
+
+## Global functions
+| Name | Usage | Description |
+|------|-------|-------------|
+`terminate()`|`terminate()`|exits the program
+`find()`|`find(target, element)`| returns `True` if element is found within target string 
