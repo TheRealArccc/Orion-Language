@@ -71,14 +71,12 @@ class FunctionValue:
     env: any
 
     def call(self, interpreter, args):
-        # This is similar to visit_FunctionCallNode logic
         call_env = interpreter.env.__class__(self.env)
         call_env.enter_scope()
 
         old_env = interpreter.env
         interpreter.env = call_env
 
-        # Declare parameters with pre-evaluated argument values
         for param, arg_value in zip(self.params, args):
             param_name = param.params.identifier if hasattr(param, 'params') else param.identifier
             call_env.declare(param_name, arg_value)

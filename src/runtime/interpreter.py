@@ -2,13 +2,21 @@ from lexer import TokenType
 from runtime.values_ import *
 from tree import *
 from runtime.environment import Environment
-import sys
+import os
+
+from lexer import Lexer
+from parser import Parser
+
+import runtime.modules.math as math_module
 # from utils.errors import *
 
 class Interpreter:
     def __init__(self):
         self.env = Environment()
         self.load_stdlib()
+        self.modules = {}
+
+        self.std_lib_modules = ["math"]
 
     def raise_error(self, message):
         raise Exception(message)
@@ -33,6 +41,66 @@ class Interpreter:
 
         return result
     
+    def visit_AttributeAccessNode(self, node):
+        obj = self.visit(node.obj)
+
+        if isinstance(obj, ModuleValue):
+            if isinstance(node.attr, str):
+                return obj.get(node.attr)
+            elif isinstance(node.attr, FunctionCallNode):
+                func = obj.get(node.attr.name.value)
+                arg_values = [self.visit(arg) for arg in node.attr.args]
+                if isinstance(func, (FunctionValue, BuiltInFunctionValue)):
+                    return func.call(self, arg_values)
+                raise Exception(f"Invalid function call on '{node.attr.name.value}()'")
+            else:
+                raise Exception(f"Invalid attribute type")
+
+        raise Exception(f"{obj} has no attributes")
+    
+    def visit_ImportNode(self, node):
+        run_py = False
+
+        module_name = node.name
+
+        if module_name not in self.std_lib_modules:
+            filename = node.path + ".or"
+
+            if not os.path.exists(filename):
+                self.raise_error(f"Unable to import '{filename}'")
+
+            source = open(filename).read()
+        else:
+            if module_name in self.std_lib_modules:
+                filename = rf"src\runtime\modules\{module_name}.py"
+                run_py = True
+            else:
+                filename = rf"src\runtime\modules\{module_name}.or"
+            
+            if not os.path.exists(filename):
+                self.raise_error(f"Unable to import '{filename}'")
+
+            source = open(filename).read()
+
+        if run_py == True:
+            return self.env.declare("math", ModuleValue(module_name, math_module.build_math_module()))
+            
+        tokens = list(Lexer(source).generate_tokens())
+        tree = Parser(tokens).parse()
+
+        module_env = Environment(parent=None)
+
+        old_env = self.env
+        self.env = module_env
+        self.load_stdlib()
+        
+        self.visit(tree)
+        self.env = old_env
+
+        module = ModuleValue(module_name, module_env)
+        self.modules[module_name] = module
+        self.env.declare(module_name, module)
+
     def visit_IndexAccessNode(self, node):
         arr = self.visit(node.array)
         index = self.visit(node.index).value
@@ -370,9 +438,12 @@ class Interpreter:
             if len(args) != 2:
                 raise Exception("find() takes in exactly 2 arguments")
             
-            element = getattr(args[0], 'value', args[0])
-            target = getattr(args[1], 'value', args[1])
+            element = getattr(args[1], 'value', args[1])
+            target = getattr(args[0], 'value', args[0])
 
+            if type(element) != str:
+                raise Exception("find() only takes in string values as arguments")
+            
             return element in target
 
         # def builtin_sqrt(interpreter, args):
