@@ -207,7 +207,6 @@ class Parser:
                 path += "\\"
                 self.advance()
                 path += self.current_token.value
-                print(path)
                 self.advance()
 
             if self.current_token and self.current_token.type == TokenType.AS:
@@ -219,7 +218,7 @@ class Parser:
                     self.raise_error("Expected identifier assigned to import module")
             else:
                 identifier = self.peek_prev_token().value
-                
+
             return ImportNode(name=identifier, path=path)
         else:
             self.raise_error("Expected import path")
@@ -607,6 +606,8 @@ class Parser:
                 return self.parse_function_call()
             elif self.peek() and self.peek().type == TokenType.LBRACKET:
                 return self.parse_index_access()
+            elif self.peek() and self.peek().type == TokenType.DOT:
+                return self.parse_attribute()
             else:
                 return self.parse_index_access()  # handles simple var or chained array access
         elif token.type in (TokenType.INT, TokenType.FLOAT, TokenType.STRING, TokenType.BOOL):
@@ -617,3 +618,23 @@ class Parser:
             return NothingLiteralNode(None)
         else:
             self.raise_error(f"Unexpected token in factor: {token}")
+
+    def parse_attribute(self):
+        obj = VariableNode(self.current_token.value)
+        self.advance()
+        
+        while self.current_token and self.current_token.type == TokenType.DOT:
+            self.advance()
+            
+            if self.current_token and self.current_token.type == TokenType.IDENTIFIER:
+                if self.peek() and self.peek().type == TokenType.LPAREN:
+                    attr = self.parse_function_call()
+                else:
+                    attr = self.current_token.value
+                    self.advance()
+                
+                obj = AttributeAccessNode(obj, attr)
+            else:
+                self.raise_error("Expected identifier after dot")
+                
+        return obj

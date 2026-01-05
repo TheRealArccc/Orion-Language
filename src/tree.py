@@ -176,6 +176,15 @@ class ImportNode:
     def __repr__(self):
         return (f"IMPORT({self.path} AS {self.name})")
     
+
+@dataclass
+class AttributeAccessNode:
+    obj: any
+    attr: any
+
+    def __repr__(self):
+        return (f"(ATTR {self.obj}.{self.attr})")
+
 @dataclass
 class ReturnNode:
     value: any
