@@ -213,7 +213,7 @@ Math is easy with `import math`!
 |----------|-----------|-------------|
 |`math.sqrt()`|`math.sqrt(number)`|returns the square root of a given number|
 |`math.pi`|`math.pi`|mathematical constant pi|
-|`math.pi`|`math.e`|euler's number|
+|`math.e`|`math.e`|euler's number|
 
 ## Global functions
 | Name | Usage | Description |
